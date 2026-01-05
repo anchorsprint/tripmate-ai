@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+
+# Build outputs
+frontend/.next/
+frontend/out/
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# Database
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test results
+frontend/test-results/
+frontend/playwright-report/
+frontend/.playwright-mcp/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+# Ignore demo artifacts
+.playwright-mcp/
+.claude/
