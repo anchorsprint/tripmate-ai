@@ -1,111 +1,157 @@
-# TripMate AI - Project Memory
+# TripMate AI - Claude Memory
 
-## Overview
-TripMate AI is a full-stack AI-powered travel planning application.
+This file serves as persistent context for Claude when working on this project.
 
-## Tech Stack
+## Project Identity
 
-### Backend (Python/FastAPI)
-- **Location**: `/mnt/d/dev/travel-app/backend`
-- **Port**: 8000
-- **Framework**: FastAPI with async support
-- **Database**: SQLite with SQLAlchemy 2.0 (aiosqlite)
-- **Auth**: JWT tokens (python-jose), SHA-256 password hashing
-- **AI**: OpenAI API integration
+**TripMate AI** is a full-stack travel planning application with AI chat. Users describe their dream trip in natural language, and the AI helps create detailed itineraries.
 
-### Frontend (Next.js)
-- **Location**: `/mnt/d/dev/travel-app/frontend`
-- **Port**: 3001
-- **Framework**: Next.js 14.1.0 with TypeScript
-- **State**: Zustand for auth, TanStack Query for data fetching
-- **Styling**: Tailwind CSS
-- **Testing**: Playwright (31 tests, all passing)
+**Repository**: https://github.com/anchorsprint/tripmate-ai
 
-## Key Files
+## Architecture Overview
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Next.js 14    │────▶│   FastAPI       │────▶│   OpenAI API    │
+│   Port 3001     │     │   Port 8000     │     │   GPT-4         │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+        │                       │
+        │                       ▼
+        │               ┌─────────────────┐
+        │               │   SQLite        │
+        │               │   tripmate.db   │
+        └───────────────┴─────────────────┘
+```
+
+## Working Directories
+
+- **Backend**: `/mnt/d/dev/travel-app/backend`
+- **Frontend**: `/mnt/d/dev/travel-app/frontend`
+- **Tests**: `/mnt/d/dev/travel-app/frontend/tests`
+
+## How to Start the Application
 
 ### Backend
-- `app/main.py` - FastAPI app entry point, CORS config
-- `app/config.py` - Settings (JWT, DB, OpenAI keys)
-- `app/db/models.py` - SQLAlchemy models (User, Trip, Itinerary, ChatSession, ChatMessage, BudgetEstimate)
-- `app/api/routes/auth.py` - Registration, login, logout
-- `app/api/routes/trips.py` - Trip CRUD
-- `app/api/routes/chat.py` - Chat sessions and messages
-- `app/api/routes/copilotkit.py` - AI chat endpoint
-- `app/services/agent_service.py` - OpenAI integration
-
-### Frontend
-- `src/app/page.tsx` - Landing page
-- `src/app/auth/` - Login and register pages
-- `src/app/app/` - Protected routes (chat, trips, settings)
-- `src/stores/authStore.ts` - Auth state management
-- `src/stores/tripStore.ts` - Trip state management
-- `src/components/` - UI components (Button, Input, Card, Modal, etc.)
-- `tests/` - Playwright tests
-
-## Running the Application
-
-### Start Backend
 ```bash
 cd /mnt/d/dev/travel-app/backend
 source venv/bin/activate
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-### Start Frontend
+### Frontend
 ```bash
 cd /mnt/d/dev/travel-app/frontend
 npm run dev -- -p 3001
 ```
 
-### Run Tests
+### Run All Tests
 ```bash
 cd /mnt/d/dev/travel-app/frontend
 npx playwright test
 ```
 
-## API Endpoints
+## Key Technical Decisions
 
-### Auth
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Get current user
-- `POST /api/auth/logout` - Logout
-
-### Trips
-- `GET /api/trips` - List user's trips
-- `POST /api/trips` - Create trip
-- `GET /api/trips/{id}` - Get trip details
-- `PUT /api/trips/{id}` - Update trip
-- `DELETE /api/trips/{id}` - Delete trip
-
-### Chat
-- `POST /api/chat` - Send message, get AI response
-- `GET /api/chat/sessions` - List chat sessions
-- `GET /api/chat/sessions/{id}` - Get session with messages
-
-### AI
-- `POST /api/copilotkit` - Streaming AI chat endpoint
-
-## Configuration
-
-### Environment Variables
-- `OPENAI_API_KEY` - Required for AI features (in `.env.local`)
-- `JWT_SECRET_KEY` - JWT signing key
-- `DATABASE_URL` - SQLite connection string
+### Authentication
+- **JWT tokens** with `python-jose`
+- **SHA-256 password hashing** (switched from bcrypt due to byte length errors)
+- Salt stored with hash as `salt:hash`
 
 ### CORS
-Currently configured to allow all origins (`*`) for development.
-For production, update `app/main.py` to restrict origins.
+- Currently `allow_origins=["*"]` for development
+- `allow_credentials=False` (required when using wildcard origin)
 
-## Known Issues Fixed
-1. Password hashing - Changed from bcrypt to SHA-256 due to byte length errors
-2. CORS - Fixed to allow localhost:3001
-3. CopilotKit SDK removed - Was causing initialization errors, using custom chat implementation instead
+### State Management
+- **Zustand** for auth state (`authStore.ts`)
+- **TanStack Query** for server data fetching
+- Tokens stored in localStorage
 
-## Test Results
-All 31 Playwright tests passing:
-- API tests (12): Health, auth, trips CRUD
-- Auth UI tests (6): Forms, validation, login/register flow
-- Chat tests (4): Interface, messaging, navigation
-- Home tests (3): Landing page, navigation
-- Trips tests (6): Empty state, create modal, trip creation
+### AI Integration
+- OpenAI API via `/api/copilotkit` endpoint
+- Custom implementation (CopilotKit SDK was removed due to errors)
+
+## Critical Files
+
+| What | Where |
+|------|-------|
+| FastAPI app | `backend/app/main.py` |
+| Database models | `backend/app/db/models.py` |
+| Auth endpoints | `backend/app/api/routes/auth.py` |
+| Trip CRUD | `backend/app/api/routes/trips.py` |
+| AI chat endpoint | `backend/app/api/routes/copilotkit.py` |
+| OpenAI service | `backend/app/services/agent_service.py` |
+| Chat UI | `frontend/src/components/chat/TravelChat.tsx` |
+| Auth store | `frontend/src/stores/authStore.ts` |
+| API client | `frontend/src/lib/api.ts` |
+
+## Database Schema
+
+```sql
+-- Core tables
+users (id, email, hashed_password, name, created_at)
+trips (id, user_id, name, destination, start_date, end_date, num_travelers, budget, status)
+itinerary_days (id, trip_id, day_number, date, activities)
+chat_sessions (id, user_id, title, created_at)
+chat_messages (id, session_id, role, content, created_at)
+budget_estimates (id, trip_id, category, estimated_amount, actual_amount, notes)
+```
+
+## API Endpoints Summary
+
+| Route | Auth | Purpose |
+|-------|------|---------|
+| `POST /api/auth/register` | No | Create user |
+| `POST /api/auth/login` | No | Get JWT token |
+| `GET /api/auth/me` | Yes | Get current user |
+| `GET /api/trips` | Yes | List trips |
+| `POST /api/trips` | Yes | Create trip |
+| `GET /api/trips/{id}` | Yes | Get trip |
+| `PUT /api/trips/{id}` | Yes | Update trip |
+| `DELETE /api/trips/{id}` | Yes | Delete trip |
+| `POST /api/chat` | Yes | Send message |
+| `POST /api/copilotkit` | No | AI streaming chat |
+
+## Test Coverage
+
+All **31 Playwright tests** passing:
+
+| Suite | Tests | Description |
+|-------|-------|-------------|
+| api.spec.ts | 12 | Backend API tests |
+| auth.spec.ts | 6 | Login/register UI |
+| chat.spec.ts | 4 | Chat interface |
+| home.spec.ts | 3 | Landing page |
+| trips.spec.ts | 6 | Trip management |
+
+## Known Issues & Solutions
+
+| Issue | Solution |
+|-------|----------|
+| bcrypt "password too long" | Use SHA-256 with salt instead |
+| CORS 400 errors | Set `allow_origins=["*"]`, `allow_credentials=False` |
+| CopilotKit initialization | Removed SDK, use direct API calls |
+| Playwright strict mode | Use exact selectors: `{ exact: true }` |
+
+## Future Development
+
+See `prd-v2.md` for planned features:
+1. Presales journey (anonymous trial)
+2. Enhanced chat UI with streaming
+3. Chat-to-trip conversion
+4. Packing lists and todos
+5. Map visualization (Leaflet.js)
+6. Google OAuth
+7. Rate limiting
+
+## Git Configuration
+
+- **Remote**: `origin` -> `https://github.com/anchorsprint/tripmate-ai.git`
+- **Commit email**: `15000126+jazztong@users.noreply.github.com`
+
+## When Making Changes
+
+1. **Before modifying code**: Read the file first to understand current implementation
+2. **After backend changes**: Test with `curl` or run Playwright tests
+3. **After frontend changes**: Run `npx playwright test` to verify nothing broke
+4. **Database changes**: Models auto-create tables on startup; restart backend
+5. **New features**: Update this file and `prd-v2.md` if significant
