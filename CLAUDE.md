@@ -8,19 +8,35 @@ This file serves as persistent context for Claude when working on this project.
 
 **Repository**: https://github.com/anchorsprint/tripmate-ai
 
-## Architecture Overview
+## Architecture Overview (v2.0)
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Next.js 14    │────▶│   FastAPI       │────▶│   OpenAI API    │
-│   Port 3001     │     │   Port 8000     │     │   GPT-4         │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-        │                       │
-        │                       ▼
-        │               ┌─────────────────┐
-        │               │   SQLite        │
-        │               │   tripmate.db   │
-        └───────────────┴─────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                   Frontend (Next.js 15 + React 19)               │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                  CopilotKit Provider                      │    │
+│  │  ┌─────────────┐  ┌─────────────────────────────────┐   │    │
+│  │  │ CopilotChat │  │ AG-UI Event Stream Connection    │   │    │
+│  │  └─────────────┘  └─────────────────────────────────┘   │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                              Port 3001                           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ AG-UI Protocol (SSE)
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Backend (FastAPI v2.0)                       │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │          AG-UI Endpoint (/api/agent) - SSE Stream        │    │
+│  │  Events: RUN_STARTED, TEXT_MESSAGE_*, RUN_FINISHED       │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                              │                                   │
+│                              ▼                                   │
+│  ┌────────────────┐  ┌─────────────┐  ┌─────────────────────┐   │
+│  │  OpenAI GPT-4  │  │   SQLite    │  │ Auth (JWT/SHA-256)  │   │
+│  └────────────────┘  │ tripmate.db │  └─────────────────────┘   │
+│                      └─────────────┘       Port 8000             │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Working Directories
@@ -66,9 +82,11 @@ npx playwright test
 - **TanStack Query** for server data fetching
 - Tokens stored in localStorage
 
-### AI Integration
-- OpenAI API via `/api/copilotkit` endpoint
-- Custom implementation (CopilotKit SDK was removed due to errors)
+### AI Integration (v2.0)
+- **CopilotKit** (`@copilotkit/react-core`, `@copilotkit/react-ui`) for agentic UI
+- **AG-UI Protocol** for standardized agent-frontend communication
+- OpenAI GPT-4o-mini via streaming AG-UI endpoint (`/api/agent`)
+- Legacy `/api/copilotkit` endpoint still available for backwards compatibility
 
 ## Critical Files
 
@@ -78,9 +96,11 @@ npx playwright test
 | Database models | `backend/app/db/models.py` |
 | Auth endpoints | `backend/app/api/routes/auth.py` |
 | Trip CRUD | `backend/app/api/routes/trips.py` |
-| AI chat endpoint | `backend/app/api/routes/copilotkit.py` |
+| **AG-UI endpoint (v2)** | `backend/app/api/routes/agui.py` |
+| Legacy chat endpoint | `backend/app/api/routes/copilotkit.py` |
 | OpenAI service | `backend/app/services/agent_service.py` |
-| Chat UI | `frontend/src/components/chat/TravelChat.tsx` |
+| **CopilotKit Chat UI (v2)** | `frontend/src/components/chat/TravelChat.tsx` |
+| **App Providers (CopilotKit)** | `frontend/src/app/providers.tsx` |
 | Auth store | `frontend/src/stores/authStore.ts` |
 | API client | `frontend/src/lib/api.ts` |
 
@@ -109,17 +129,19 @@ budget_estimates (id, trip_id, category, estimated_amount, actual_amount, notes)
 | `PUT /api/trips/{id}` | Yes | Update trip |
 | `DELETE /api/trips/{id}` | Yes | Delete trip |
 | `POST /api/chat` | Yes | Send message |
-| `POST /api/copilotkit` | No | AI streaming chat |
+| **`POST /api/agent`** | No | **AG-UI streaming endpoint (v2)** |
+| **`GET /api/agent/info`** | No | **Agent capabilities info** |
+| `POST /api/copilotkit` | No | Legacy AI streaming chat |
 
 ## Test Coverage
 
-All **31 Playwright tests** passing:
+All **34 Playwright tests** passing:
 
 | Suite | Tests | Description |
 |-------|-------|-------------|
-| api.spec.ts | 12 | Backend API tests |
+| api.spec.ts | 15 | Backend API tests (includes AG-UI tests) |
 | auth.spec.ts | 6 | Login/register UI |
-| chat.spec.ts | 4 | Chat interface |
+| chat.spec.ts | 4 | CopilotKit chat interface |
 | home.spec.ts | 3 | Landing page |
 | trips.spec.ts | 6 | Trip management |
 
@@ -129,8 +151,10 @@ All **31 Playwright tests** passing:
 |-------|----------|
 | bcrypt "password too long" | Use SHA-256 with salt instead |
 | CORS 400 errors | Set `allow_origins=["*"]`, `allow_credentials=False` |
-| CopilotKit initialization | Removed SDK, use direct API calls |
+| CopilotKit initialization (v1) | Fixed in v2 with proper AG-UI protocol |
 | Playwright strict mode | Use exact selectors: `{ exact: true }` |
+| Next.js 15 async APIs | Use `await cookies()`, `await headers()` |
+| React 19 `useFormState` | Migrate to `useActionState` |
 
 ## Future Development
 

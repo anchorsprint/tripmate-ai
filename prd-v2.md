@@ -485,6 +485,89 @@ GET  /api/auth/google/callback # Handle OAuth callback
 
 ---
 
+## Feature 8: Frontend Upgrade to Next.js 15 with CopilotKit & AG-UI
+
+### Problem Statement
+The current frontend uses Next.js 14 with a custom AI chat implementation. This lacks the rich agentic UI capabilities and standardized agent communication that modern AI applications require.
+
+### Solution
+Upgrade to Next.js 15 with React 19, integrate CopilotKit for agentic UI components, and implement the AG-UI protocol for standardized agent-frontend communication.
+
+### Requirements
+
+#### 8.1 Next.js 15 Upgrade
+- [ ] Upgrade Next.js from 14.1.0 to 15.x
+- [ ] Upgrade React from 18.x to 19.x
+- [ ] Update async request APIs (`cookies()`, `headers()`, etc.)
+- [ ] Migrate from `useFormState` to `useActionState` if applicable
+- [ ] Update caching strategies (uncached by default in Next.js 15)
+- [ ] Ensure ESLint 9 compatibility
+- [ ] Update TypeScript types for React 19
+
+#### 8.2 CopilotKit Integration
+- [ ] Install CopilotKit packages (`@copilotkit/react-core`, `@copilotkit/react-ui`)
+- [ ] Wrap application with `<CopilotKit>` provider
+- [ ] Replace custom chat UI with `<CopilotChat>` or `<CopilotSidebar>`
+- [ ] Implement `useCopilotAction` for trip-related actions
+- [ ] Add `useCopilotChatSuggestions` for quick replies
+- [ ] Configure streaming responses with typing indicators
+
+#### 8.3 AG-UI Protocol Backend Implementation
+- [ ] Install AG-UI Python SDK (`ag-ui-protocol`)
+- [ ] Create AG-UI compatible endpoint in FastAPI
+- [ ] Implement AG-UI event types:
+  - `RUN_STARTED` / `RUN_FINISHED` (lifecycle)
+  - `TEXT_MESSAGE_START` / `TEXT_MESSAGE_CONTENT` / `TEXT_MESSAGE_END` (streaming)
+  - `TOOL_CALL_START` / `TOOL_CALL_ARGS` / `TOOL_CALL_END` (tool execution)
+  - `STATE_SNAPSHOT` / `STATE_DELTA` (state sync)
+- [ ] Stream responses via Server-Sent Events (SSE)
+- [ ] Integrate with existing OpenAI agent service
+
+#### 8.4 Frontend-Backend Connection via AG-UI
+- [ ] Configure CopilotKit runtime to connect to AG-UI endpoint
+- [ ] Implement `useAgent` hook for direct agent interaction
+- [ ] Set up bidirectional state synchronization
+- [ ] Handle real-time streaming in chat UI
+- [ ] Implement human-in-the-loop patterns for trip confirmation
+
+#### 8.5 Agentic UI Components
+- [ ] Generative UI for dynamic trip cards
+- [ ] Interactive action buttons in chat responses
+- [ ] Real-time context enrichment (user preferences, trip history)
+- [ ] Frontend tool integration (save trip, view map, etc.)
+
+**Architecture:**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Frontend (Next.js 15)                     │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                  CopilotKit Provider                      │    │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │    │
+│  │  │ CopilotChat │  │  useAgent   │  │ useCopilotAction│  │    │
+│  │  └─────────────┘  └─────────────┘  └─────────────────┘  │    │
+│  └─────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ AG-UI Protocol (SSE)
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Backend (FastAPI)                            │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │              AG-UI Endpoint (/api/agent)                  │    │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │    │
+│  │  │ Event Stream│  │ State Sync  │  │  Tool Executor  │  │    │
+│  │  └─────────────┘  └─────────────┘  └─────────────────┘  │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                              │                                   │
+│                              ▼                                   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │              Agent Service (OpenAI GPT-4)                 │    │
+│  └─────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Technical Implementation Notes
 
 ### New Dependencies
@@ -495,17 +578,21 @@ GET  /api/auth/google/callback # Handle OAuth callback
 authlib>=1.3.0          # OAuth library
 httpx>=0.27.0           # Async HTTP client for OAuth
 itsdangerous>=2.1.0     # Secure token signing
+ag-ui-protocol>=0.1.0   # AG-UI protocol SDK
 ```
 
 **Frontend:**
 ```json
-// package.json additions
+// package.json updates
 {
+  "next": "^15.1.0",
+  "react": "^19.0.0",
+  "react-dom": "^19.0.0",
+  "@copilotkit/react-core": "^1.50.0",
+  "@copilotkit/react-ui": "^1.50.0",
   "@react-oauth/google": "^0.12.0",
   "react-leaflet": "^4.2.0",
-  "leaflet": "^1.9.0",
-  "@copilotkit/react-core": "^1.3.0",
-  "@copilotkit/react-ui": "^1.3.0"
+  "leaflet": "^1.9.0"
 }
 ```
 
@@ -597,18 +684,24 @@ ANONYMOUS_QUERY_LIMIT=5
 
 ## Implementation Priority
 
+### Phase 0 (Foundation - Do First)
+1. **Frontend Upgrade to Next.js 15 with CopilotKit & AG-UI (Feature 8)**
+   - This is the foundation for all other features
+   - Enables rich agentic UI capabilities
+   - Standardizes agent-frontend communication
+
 ### Phase 1 (High Priority)
-1. Security Improvements (Feature 6)
-2. Google OAuth Login (Feature 7)
-3. Presales Journey (Feature 1)
+2. Security Improvements (Feature 6)
+3. Google OAuth Login (Feature 7)
+4. Presales Journey (Feature 1)
 
 ### Phase 2 (Medium Priority)
-4. Enhanced Chat UI (Feature 2)
-5. Chat-to-Trip Integration (Feature 3)
+5. Enhanced Chat UI (Feature 2) - Now powered by CopilotKit
+6. Chat-to-Trip Integration (Feature 3)
 
 ### Phase 3 (Lower Priority)
-6. Enhanced Trip Details (Feature 4)
-7. Visual Display & Sharing (Feature 5)
+7. Enhanced Trip Details (Feature 4)
+8. Visual Display & Sharing (Feature 5)
 
 ---
 
@@ -625,6 +718,7 @@ ANONYMOUS_QUERY_LIMIT=5
 | GET | `/api/auth/google/callback` | No | OAuth callback |
 | GET | `/api/auth/me` | Yes | Get current user |
 | POST | `/api/auth/logout` | Yes | Logout |
+| POST | `/api/agent` | Optional | AG-UI agent endpoint (SSE stream) |
 | POST | `/api/chat/anonymous` | No | Anonymous chat (limited) |
 | POST | `/api/chat` | Yes | Authenticated chat |
 | GET | `/api/trips` | Yes | List trips |
@@ -637,13 +731,36 @@ ANONYMOUS_QUERY_LIMIT=5
 
 ### B. Component Library
 
-Recommended UI components to build:
-- `<DestinationCard />`
-- `<ItineraryDayCard />`
-- `<BudgetBreakdownCard />`
-- `<TripMap />`
-- `<PackingList />`
-- `<TodoChecklist />`
-- `<ShareModal />`
-- `<GoogleSignInButton />`
-- `<QueryLimitBanner />`
+**CopilotKit Components (from library):**
+- `<CopilotKit>` - Provider component wrapping the app
+- `<CopilotChat>` - Full-featured chat interface
+- `<CopilotSidebar>` - Sidebar chat layout
+- `<CopilotPopup>` - Popup chat widget
+
+**Custom UI Components to build:**
+- `<DestinationCard />` - Rendered via generative UI in chat
+- `<ItineraryDayCard />` - Day-by-day itinerary display
+- `<BudgetBreakdownCard />` - Budget visualization
+- `<TripMap />` - Leaflet.js map integration
+- `<PackingList />` - Checklist for packing items
+- `<TodoChecklist />` - Pre-trip task management
+- `<ShareModal />` - Trip sharing interface
+- `<GoogleSignInButton />` - OAuth login button
+- `<QueryLimitBanner />` - Anonymous user limit display
+
+### C. AG-UI Event Types Reference
+
+| Event Type | Category | Description |
+|------------|----------|-------------|
+| `RUN_STARTED` | Lifecycle | Agent run has begun |
+| `RUN_FINISHED` | Lifecycle | Agent run completed |
+| `RUN_ERROR` | Lifecycle | Agent run failed |
+| `TEXT_MESSAGE_START` | Text | Start of text message |
+| `TEXT_MESSAGE_CONTENT` | Text | Streaming text chunk |
+| `TEXT_MESSAGE_END` | Text | End of text message |
+| `TOOL_CALL_START` | Tool | Tool execution started |
+| `TOOL_CALL_ARGS` | Tool | Tool arguments |
+| `TOOL_CALL_END` | Tool | Tool execution finished |
+| `STATE_SNAPSHOT` | State | Full state update |
+| `STATE_DELTA` | State | Incremental state change |
+| `CUSTOM` | Special | Custom event for UI actions |

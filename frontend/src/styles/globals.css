@@ -56,3 +56,50 @@ body {
 .chat-input {
   @apply border-t p-4;
 }
+
+/* CopilotKit custom theme */
+:root {
+  --copilot-kit-primary-color: #0ea5e9;
+  --copilot-kit-contrast-color: #ffffff;
+  --copilot-kit-background-color: #ffffff;
+  --copilot-kit-secondary-color: #f3f4f6;
+  --copilot-kit-separator-color: #e5e7eb;
+}
+
+/* Override CopilotKit chat styles */
+.copilotKitChat {
+  height: 100% !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+.copilotKitMessages {
+  padding: 1rem !important;
+}
+
+.copilotKitMessage[data-role="user"] {
+  background-color: #0ea5e9 !important;
+  color: white !important;
+}
+
+.copilotKitMessage[data-role="assistant"] {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+.copilotKitInput {
+  border-color: #d1d5db !important;
+}
+
+.copilotKitInput:focus {
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2) !important;
+}
+
+.copilotKitButton {
+  background-color: #0ea5e9 !important;
+}
+
+.copilotKitButton:hover {
+  background-color: #0284c7 !important;
+}
