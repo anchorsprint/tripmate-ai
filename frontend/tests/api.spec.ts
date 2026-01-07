@@ -130,6 +130,55 @@ test.describe('API Endpoints', () => {
     })
   })
 
+  test.describe('AG-UI Agent API', () => {
+    test('should return agent info', async ({ request }) => {
+      const response = await request.get(`${API_URL}/api/agent/info`)
+      expect(response.ok()).toBeTruthy()
+
+      const data = await response.json()
+      expect(data.name).toBe('TripMate AI')
+      expect(data.protocol).toBe('ag-ui')
+      expect(data.version).toBe('2.0.0')
+      expect(data.actions).toBeDefined()
+      expect(Array.isArray(data.actions)).toBeTruthy()
+    })
+
+    test('should stream AG-UI events', async ({ request }) => {
+      const response = await request.post(`${API_URL}/api/agent`, {
+        data: {
+          messages: [
+            { role: 'user', content: 'Hello, can you help me plan a trip?' }
+          ]
+        }
+      })
+
+      expect(response.ok()).toBeTruthy()
+      expect(response.headers()['content-type']).toContain('text/event-stream')
+
+      // Verify the response contains AG-UI events
+      const body = await response.text()
+      expect(body).toContain('RUN_STARTED')
+      expect(body).toContain('TEXT_MESSAGE_START')
+    })
+
+    test('should handle multiple messages in context', async ({ request }) => {
+      const response = await request.post(`${API_URL}/api/agent`, {
+        data: {
+          messages: [
+            { role: 'user', content: 'I want to visit Japan' },
+            { role: 'assistant', content: 'Japan is a wonderful destination!' },
+            { role: 'user', content: 'What are the best places to visit?' }
+          ],
+          threadId: 'test-thread-123'
+        }
+      })
+
+      expect(response.ok()).toBeTruthy()
+      const body = await response.text()
+      expect(body).toContain('RUN_STARTED')
+    })
+  })
+
   test.describe('Trips API', () => {
     let authToken: string
 

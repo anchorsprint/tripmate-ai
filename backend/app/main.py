@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from app.config import get_settings
 from app.db.database import init_db
-from app.api.routes import auth, trips, itinerary, chat, copilotkit
+from app.api.routes import auth, trips, itinerary, chat, copilotkit, agui
 
 settings = get_settings()
 
@@ -20,8 +20,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.app_name,
-    description="AI-powered travel planning assistant",
-    version="1.0.0",
+    description="AI-powered travel planning assistant with AG-UI protocol support",
+    version="2.0.0",
     lifespan=lifespan
 )
 
@@ -40,6 +40,7 @@ app.include_router(trips.router, prefix="/api/trips", tags=["Trips"])
 app.include_router(itinerary.router, prefix="/api/trips", tags=["Itinerary"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(copilotkit.router, prefix="/api", tags=["CopilotKit"])
+app.include_router(agui.router, prefix="/api", tags=["AG-UI"])
 
 
 @app.get("/")

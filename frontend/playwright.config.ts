@@ -21,18 +21,11 @@ export default defineConfig({
     },
   ],
 
-  webServer: [
-    {
-      command: 'cd ../backend && . venv/bin/activate && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000',
-      url: 'http://localhost:8000/health',
-      reuseExistingServer: true,
-      timeout: 120000,
-    },
-    {
-      command: 'npm run dev -- -p 3001',
-      url: 'http://localhost:3001',
-      reuseExistingServer: true,
-      timeout: 120000,
-    },
-  ],
+  // Web servers disabled - start manually or use reuseExistingServer
+  webServer: {
+    command: 'npm run dev -- -p 3001',
+    url: 'http://localhost:3001',
+    reuseExistingServer: true,
+    timeout: 120000,
+  },
 })

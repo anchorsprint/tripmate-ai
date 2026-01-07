@@ -21,44 +21,52 @@ test.describe('Chat Page', () => {
     await expect(page.getByRole('heading', { name: 'TripMate AI' })).toBeVisible()
     await expect(page.getByText('Your travel planning assistant')).toBeVisible()
 
-    // Check welcome message
+    // Check welcome message from CopilotKit
     await expect(
       page.getByText(/Hi! I'm TripMate AI/i)
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 10000 })
 
-    // Check input area
+    // Check input area - CopilotKit uses a textarea
     await expect(page.getByPlaceholder('Describe your dream trip...')).toBeVisible()
   })
 
   test('should send a message and receive response', async ({ page }) => {
+    // Wait for CopilotKit to initialize
+    await page.waitForTimeout(1000)
+
+    // Find the CopilotKit input textarea
     const input = page.getByPlaceholder('Describe your dream trip...')
+    await expect(input).toBeVisible()
 
     // Type a message
     await input.fill('I want to go to Paris for a week')
 
-    // Send the message
-    await page.getByRole('button').filter({ has: page.locator('svg') }).click()
+    // Send the message using Enter key (CopilotKit standard behavior)
+    await input.press('Enter')
 
-    // Check user message appears
-    await expect(page.getByText('I want to go to Paris for a week')).toBeVisible()
+    // Check user message appears in the chat
+    await expect(page.getByText('I want to go to Paris for a week')).toBeVisible({ timeout: 5000 })
 
-    // Wait for either loading indicator or an AI response (up to 10 seconds)
-    // The AI might respond quickly or show loading
-    await page.waitForTimeout(2000)
+    // Wait for response (AI response may take a few seconds)
+    await page.waitForTimeout(3000)
 
-    // Verify message was sent - there should be at least 2 messages (welcome + user)
+    // Verify message was sent
     const userMessage = page.locator('text=I want to go to Paris for a week')
     await expect(userMessage).toBeVisible()
   })
 
   test('should allow Enter key to send message', async ({ page }) => {
+    // Wait for CopilotKit to initialize
+    await page.waitForTimeout(1000)
+
     const input = page.getByPlaceholder('Describe your dream trip...')
+    await expect(input).toBeVisible()
 
     await input.fill('Hello')
     await input.press('Enter')
 
     // Message should be sent
-    await expect(page.getByText('Hello')).toBeVisible()
+    await expect(page.getByText('Hello')).toBeVisible({ timeout: 5000 })
   })
 
   test('should navigate between pages', async ({ page }) => {
