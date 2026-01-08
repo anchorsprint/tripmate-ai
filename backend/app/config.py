@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     # OpenAI
     openai_api_key: str = ""
 
+    # Google OAuth
+    google_client_id: str = ""
+    google_client_secret: str = ""
+
+    # Presales
+    anonymous_query_limit: int = 5
+
     # CORS
     cors_origins: str = "http://localhost:3000,http://localhost:3001"
 

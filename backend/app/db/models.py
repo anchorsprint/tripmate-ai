@@ -48,6 +48,8 @@ class Trip(Base):
     user = relationship("User", back_populates="trips")
     itinerary = relationship("Itinerary", back_populates="trip", uselist=False, cascade="all, delete-orphan")
     budget_estimate = relationship("BudgetEstimate", back_populates="trip", uselist=False, cascade="all, delete-orphan")
+    packing_items = relationship("PackingItem", back_populates="trip", cascade="all, delete-orphan")
+    todos = relationship("TripTodo", back_populates="trip", cascade="all, delete-orphan")
 
 
 class Itinerary(Base):
@@ -102,3 +104,36 @@ class BudgetEstimate(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     trip = relationship("Trip", back_populates="budget_estimate")
+
+
+class PackingItem(Base):
+    """Packing list items for a trip."""
+    __tablename__ = "packing_items"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False)
+    category = Column(String(50), nullable=False)  # clothing, toiletries, electronics, documents, etc.
+    item = Column(String(255), nullable=False)
+    packed = Column(Boolean, default=False)
+    quantity = Column(Integer, default=1)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    trip = relationship("Trip", back_populates="packing_items")
+
+
+class TripTodo(Base):
+    """Pre-trip preparation tasks."""
+    __tablename__ = "trip_todos"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    completed = Column(Boolean, default=False)
+    due_date = Column(String, nullable=True)  # YYYY-MM-DD format
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    priority = Column(Integer, default=0)  # 0=normal, 1=high, 2=urgent
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    trip = relationship("Trip", back_populates="todos")
